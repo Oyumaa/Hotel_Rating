@@ -1,0 +1,78 @@
+import json
+import pandas as pd
+from pandas.io.json import json_normalize
+from odo import odo
+import pickle
+import os
+
+# open json file
+with open('C:/MSPA/420_Data Management/Python Projects/100506.json') as input_file:
+jsondat=json.load(input_file) # open json file
+
+# flatten json data
+result = json_normalize(jsondat,[ 'Reviews'])
+
+# appending each rows of Ratings dict to create a list 
+Rating=[] 
+
+for row in jsondat['Reviews']:
+  rating = row['Ratings']
+  Rating.append(rating)
+df_rating = pd.DataFrame(Rating)
+
+# check data type
+df_rating.dtypes
+
+# convert all the files into numeric value in order to analyze
+new_data=df_rating.convert_objects(convert_numeric = True) 
+
+# concatenate all lists into my_data dataset
+my_data = pd.concat([result['Author'], result['Date'],new_data],axis = 1)
+
+# Ratings Hotel Received
+print('The Average ratings')
+print(odo(new_data,pd.DataFrame).mean())
+
+print('the Lowest Ratings')
+print(odo(new_data, pd.DataFrame).min())
+
+print('the Highest Ratings')
+print(odo(new_data, pd.DataFrame).max())
+
+# pickle my ratings data
+file = open('hotel_ratings.pck', 'w')
+pickle.dump(my_data,file)
+file.close() 
+
+# get review comments with date and name from the flattened dataset
+Content = pd.concat([result['Author'], result['Date'],result['Content']],axis = 1)
+
+# set index by author
+final_data=Content.set_index('Author')
+
+final_data.to_csv('guest_review.csv',encoding='utf-8')# must include encoding='utf-8' to avoid error message
+
+# identity directory that need all json data in one place
+directory = os.path.join('C:/MSPA/420_Data Management/Python Projects/Hotel Data/') 
+
+my_hotels=[] # create empty list to insert all hotel info from all files
+
+# read all json file in the directory and append HotelInfo into my_hotel empty list
+for root, dirs, files in os.walk(directory):
+  for file in files:
+    if file.endswith('.json'):# loop through all json files
+    print(os.path.join(root, file)) # review all the data thatisb being read into Python
+
+    with open(os.path.join(root, file)) as input_file:
+    jsondat=json.load(input_file) # open json file 
+    result = jsondat[ 'HotelInfo']
+    my_hotels.append(result) # append all the result into set
+    hotel_info=pd.DataFrame(my_hotels) 
+
+# save hotel_info dataset into the directory identified
+hotel_info.to_csv(os.path.join(root,'hotel_info.csv'))
+
+
+
+
+
